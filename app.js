@@ -12,13 +12,20 @@ const themeLabel = document.getElementById('theme-label');
 const filterButtons = document.querySelectorAll('.filter-button');
 
 const THEME_STORAGE_KEY = 'todo-list-theme';
+const FILTER_STORAGE_KEY = 'todo-list-filter';
+const VALID_FILTERS = ['all', 'active', 'completed'];
 const EMPTY_MESSAGES = {
   all: '還沒有任何待辦事項,新增一個吧!',
   active: '目前沒有未完成的待辦事項。',
   completed: '目前沒有已完成的待辦事項。',
 };
 
-let currentFilter = 'all';
+function getSavedFilter() {
+  const savedFilter = localStorage.getItem(FILTER_STORAGE_KEY);
+  return VALID_FILTERS.includes(savedFilter) ? savedFilter : 'all';
+}
+
+let currentFilter = getSavedFilter();
 
 // 從 localStorage 讀取資料，資料格式不正確時使用空陣列。
 function loadTodos() {
@@ -61,6 +68,18 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function saveCurrentFilter() {
+  localStorage.setItem(FILTER_STORAGE_KEY, currentFilter);
+}
+
+function syncFilterButtons() {
+  filterButtons.forEach((button) => {
+    const isActive = button.dataset.filter === currentFilter;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
+}
+
 // 根據資料重新繪製畫面。
 function render() {
   list.replaceChildren();
@@ -97,6 +116,7 @@ function render() {
 
   emptyState.hidden = visibleTodos.length > 0;
   emptyState.textContent = EMPTY_MESSAGES[currentFilter];
+  syncFilterButtons();
   const remaining = todos.filter((todo) => !todo.completed).length;
   remainingCount.textContent = `未完成:${remaining} 項`;
 }
@@ -155,11 +175,7 @@ themeToggle.addEventListener('click', () => {
 filterButtons.forEach((button) => {
   button.addEventListener('click', () => {
     currentFilter = button.dataset.filter;
-    filterButtons.forEach((filterButton) => {
-      const isActive = filterButton === button;
-      filterButton.classList.toggle('active', isActive);
-      filterButton.setAttribute('aria-pressed', String(isActive));
-    });
+    saveCurrentFilter();
     render();
   });
 });
